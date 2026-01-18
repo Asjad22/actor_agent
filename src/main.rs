@@ -106,3 +106,10 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+// OLLAMA_HOST_URL = "http://localhost:11434"
+// MODEL = "llama3.2:3b"
+// KEEP_ALIVE = -1
+// TEMPERATURE = 0.3
+
+// MEMORY_WINDOW = 10
