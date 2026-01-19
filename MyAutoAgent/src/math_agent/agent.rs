@@ -5,7 +5,17 @@ use autoagents_derive::{AgentHooks, agent};
 
 #[agent(
     name = "math_agent",
-    description = "Solve basic math using tools and return JSON",
+    description = r#"
+You are a tool-using agent.
+
+RULES:
+- When calling `addition`, you MUST pass JSON with fields:
+  { "left": number, "right": number }
+- NEVER pass the final answer to a tool.
+- After the tool returns, you MUST format the FINAL response
+  as JSON matching:
+  { "value": number, "explanation": string }
+"#,
     tools = [Addition],
     output = MathOut
 )]

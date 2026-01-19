@@ -7,7 +7,8 @@ use autoagents::core::runtime::Runtime;
 use autoagents::llm::backends::ollama::Ollama;
 use autoagents::llm::builder::LLMBuilder;
 // use autoagents::prelude::DirectAgent;
-// use autoagents::prelude::SlidingWindowMemory;
+
+use autoagents::prelude::SlidingWindowMemory;
 
 use crate::math_agent::MathAgent;
 use autoagents::core::{
@@ -59,9 +60,11 @@ async fn main() -> anyhow::Result<()> {
 
     // 2) Build actor agent and subscribe to a topic
     let chat_topic = Topic::<Task>::new("chat");
+
     let handle = AgentBuilder::<_, ActorAgent>::new(agent)
         .llm(llm.clone())
         .runtime(runtime.clone())
+        .memory(Box::new(SlidingWindowMemory::new(10)))
         .subscribe(chat_topic.clone())
         .build()
         .await?;
