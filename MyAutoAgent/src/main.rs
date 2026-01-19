@@ -93,3 +93,13 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
+
+// OLLAMA_HOST_URL="http://localhost:11434"
+// ## OLLAMA_LLM_MODEL="ministral-3:8b"
+// ## OLLAMA_LLM_MODEL =  "ministral-3:3b"
+// OLLAMA_LLM_MODEL= "llama3.2:3b"
+// OLLAMA_TEMPERATURE = 0
+// ## PROMPT="add 3.1, 2.9 and explain how you did it, do not calculate yourself, use avaiable tools"
+// ## PROMPT = "list available tools"
+// PROMPT = "Use the math tool to add 3.1 and 2.9 and return the tool output."
+// ## PROMPT = "Thought: I need to add 3.1 and 2.9. I will use the addition tool. Action: addition {\"left\": 3.1, \"right\": 2.9}"
