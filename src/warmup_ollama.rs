@@ -34,8 +34,9 @@ pub async fn warmup_ollama(base_url: &str, model: &str, keep_alive: i32) -> anyh
     }
 
     let client = Client::new();
-    let url = format!("{}/api/chat", base_url);
-
+    // let url = format!("{}/api/chat", base_url);
+    let url = base_url;
+    println!("url : {}", url);
     let resp = client
         .post(url)
         .json(&json!({

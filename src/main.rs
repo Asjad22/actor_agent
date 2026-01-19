@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
 
     // Config
     let base_url = env::var("OLLAMA_HOST_URL")?;
+    println!("base_url : {}", base_url);
     let model = env::var("MODEL")?;
     let temperature: f32 = env::var("TEMPERATURE")?.parse()?;
     let keep_alive: i32 = env::var("KEEP_ALIVE")?.parse()?;
@@ -49,6 +50,12 @@ async fn main() -> anyhow::Result<()> {
     let runtime = SingleThreadedRuntime::new(None);
     let mut env = Environment::new(None);
     env.register_runtime(runtime.clone()).await?;
+    tokio::spawn({
+        let runtime = runtime.clone();
+        async move {
+            runtime.run().await;
+        }
+    });
 
     // Topic
     let math_topic = Topic::<Task>::new("math");
@@ -106,10 +113,3 @@ async fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-
-// OLLAMA_HOST_URL = "http://localhost:11434"
-// MODEL = "llama3.2:3b"
-// KEEP_ALIVE = -1
-// TEMPERATURE = 0.3
-
-// MEMORY_WINDOW = 10

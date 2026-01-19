@@ -1,0 +1,114 @@
+it's not calling tool via EVENT, instead its working/answering directly.
+
+use dotenv_rs::dotenv;
+use std::env;
+
+mod math_agent;
+use autoagents::core::runtime::Runtime;
+
+use autoagents::llm::backends::ollama::Ollama;
+use autoagents::llm::builder::LLMBuilder;
+// use autoagents::prelude::DirectAgent;
+// use autoagents::prelude::SlidingWindowMemory;
+
+use crate::math_agent::MathAgent;
+use autoagents::core::{
+    actor::Topic,
+    agent::prebuilt::executor::ReActAgent,
+    agent::task::Task,
+    agent::{ActorAgent, AgentBuilder},
+    environment::Environment,
+    runtime::{SingleThreadedRuntime, TypedRuntime},
+};
+use autoagents::prelude::Event;
+
+use futures_util::StreamExt;
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    dotenv().ok();
+
+    let ollama_host_url: String =
+        env::var("OLLAMA_HOST_URL").unwrap_or_else(|_| "http://localhost:11434".to_string());
+    let ollama_model: String =
+        env::var("OLLAMA_LLM_MODEL").unwrap_or_else(|_| "llama3.2:4b".to_string());
+    let ollama_temperature: f32 = {
+        env::var("OLLAMA_TEMPERATURE")
+            .unwrap_or("0.7".to_string())
+            .parse()
+            .unwrap_or(0.7)
+    };
+    let prompt: String = env::var("PROMPT").unwrap_or_else(|_| "hi".to_string());
+
+    let llm: Arc<Ollama> = LLMBuilder::<Ollama>::new()
+        .base_url(ollama_host_url)
+        .model(ollama_model)
+        .temperature(ollama_temperature)
+        .build()?;
+    let agent = ReActAgent::new(MathAgent);
+
+    // 1) Create runtime and environment
+    let runtime = SingleThreadedRuntime::new(None);
+    let mut env = Environment::new(None);
+    env.register_runtime(runtime.clone()).await?;
+    tokio::spawn({
+        let runtime = runtime.clone();
+        async move {
+            runtime.run().await;
+        }
+    });
+
+    // 2) Build actor agent and subscribe to a topic
+    let chat_topic = Topic::<Task>::new("chat");
+    let handle = AgentBuilder::<_, ActorAgent>::new(agent)
+        .llm(llm.clone())
+        .runtime(runtime.clone())
+        .subscribe(chat_topic.clone())
+        .build()
+        .await?;
+
+    println!("handle acquired");
+
+    let mut events = env.take_event_receiver(None).await?;
+    println!("event defined");
+
+    tokio::spawn(async move {
+        println!("spawned");
+        while let Some(event) = events.next().await {
+            println!("EVENT: {:?}", event);
+            if let Event::TaskComplete { result, .. } = &event {
+                println!("🔹 LLM response: {}", result);
+            }
+        }
+    });
+
+    println!("publishing task");
+
+    runtime.publish(&chat_topic, Task::new(prompt)).await?;
+
+    println!("Actor system running. Press Ctrl+C to exit.");
+    tokio::signal::ctrl_c().await?;
+
+    Ok(())
+}
+
+PROMPT = "add 3.1, 2.9"
+
+output:
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.80s
+     Running `target/debug/MyAutoAgent`
+handle acquired
+event defined
+spawned
+publishing task
+Actor system running. Press Ctrl+C to exit.
+EVENT: TaskStarted { sub_id: 8f47c3a4-307a-4c92-bd54-52c488b694ad, actor_id: 1c4b25d5-80f7-46f6-a814-d0f3e8619f8d, actor_name: "add 3.1, 2.9", task_description: "math_agent" }
+EVENT: TurnStarted { turn_number: 0, max_turns: 10 }
+EVENT: TurnCompleted { turn_number: 0, final_turn: false }
+EVENT: TaskComplete { sub_id: 8f47c3a4-307a-4c92-bd54-52c488b694ad, actor_id: 1c4b25d5-80f7-46f6-a814-d0f3e8619f8d, actor_name: "math_agent", result: "{\n  \"done\": true,\n  \"response\": \"{\\\"explanation\\\": \\\"Here's how to solve basic math problems using tools and structured JSON output.\\\", \\\"value\\\": 5000000000000000}\",\n  \"tool_calls\": []\n}" }
+🔹 LLM response: {
+  "done": true,
+  "response": "{\"explanation\": \"Here's how to solve basic math problems using tools and structured JSON output.\", \"value\": 5000000000000000}",
+  "tool_calls": []
+}

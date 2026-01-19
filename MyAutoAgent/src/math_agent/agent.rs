@@ -1,0 +1,24 @@
+use crate::math_agent::tool::{Addition, MathOut};
+use autoagents::core::agent::prebuilt::executor::ReActAgentOutput;
+use autoagents::prelude::AgentOutputT;
+use autoagents_derive::{AgentHooks, agent};
+
+#[agent(
+    name = "math_agent",
+    description = "Solve basic math using tools and return JSON",
+    tools = [Addition],
+    output = MathOut
+)]
+#[derive(Clone, AgentHooks, Default)]
+pub struct MathAgent;
+
+impl From<ReActAgentOutput> for MathOut {
+    fn from(out: ReActAgentOutput) -> Self {
+        serde_json::from_str(&out.response).unwrap_or({
+            MathOut {
+                value: 0.0,
+                explanation: out.response,
+            }
+        })
+    }
+}
