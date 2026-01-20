@@ -12,13 +12,15 @@ pub struct AddArgs {
     pub right: f64,
 }
 
-#[tool(name = "addition", description = "Add two numbers", input = AddArgs)]
+#[tool(name = "addition", description = "You have access to an 'addition' tool. It requires exactly two parameters: 'left' (number) and 'right' (number). Never include other fields. Example: {\"left\": 3.1, \"right\": 2.9}", input = AddArgs)]
 pub struct Addition;
 
 #[async_trait]
 impl ToolRuntime for Addition {
     async fn execute(&self, args: Value) -> Result<Value, ToolCallError> {
+        println!("args : {}", args);
         let a: AddArgs = serde_json::from_value(args)?;
+        println!("a : {:?}", a);
         println!("Adding a.left + a.right");
         Ok((a.left + a.right).into())
     }

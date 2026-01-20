@@ -40,6 +40,8 @@ async fn main() -> anyhow::Result<()> {
     };
     let prompt: String = env::var("PROMPT").unwrap_or_else(|_| "hi".to_string());
 
+    println!("LLM Model: {}", ollama_model);
+
     let llm: Arc<Ollama> = LLMBuilder::<Ollama>::new()
         .base_url(ollama_host_url)
         .model(ollama_model)
